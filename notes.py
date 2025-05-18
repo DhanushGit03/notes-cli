@@ -7,48 +7,71 @@ NOTES_FILE = "notes.json"
 def load_notes():
     if not os.path.exists(NOTES_FILE):
         return []
-    with open(NOTES_FILE, "r") as file:
-        return json.load(file)
+    try:
+        with open(NOTES_FILE, "r") as f:
+            return json.load(f)
+    except json.JSONDecodeError:
+        return []
 
 def save_notes(notes):
-    with open(NOTES_FILE, "w") as file:
-        json.dump(notes, file, indent=2)
+    with open(NOTES_FILE, "w") as f:
+        json.dump(notes, f, indent=2)
 
 def add_note(content):
     notes = load_notes()
-    notes.append({"id": len(notes)+1, "content": content})
+    new_id = len(notes) + 1
+    notes.append({"id": new_id, "content": content})
     save_notes(notes)
-    print("✅ Note added.")
+    print(f"✅ Note added with ID {new_id}.")
 
 def list_notes():
     notes = load_notes()
     if not notes:
-        print("No notes found.")
+        print("📭 No notes found.")
+        return
     for note in notes:
         print(f"[{note['id']}] {note['content']}")
 
 def delete_note(note_id):
     notes = load_notes()
-    notes = [n for n in notes if n['id'] != note_id]
-    for i, note in enumerate(notes):
-        note['id'] = i + 1
-    save_notes(notes)
-    print("🗑️ Note deleted.")
+    updated_notes = [note for note in notes if note['id'] != note_id]
+
+    if len(notes) == len(updated_notes):
+        print(f"⚠️ No note found with ID {note_id}.")
+        return
+
+    # Reassign IDs to maintain order
+    for i, note in enumerate(updated_notes, start=1):
+        note['id'] = i
+
+    save_notes(updated_notes)
+    print(f"🗑️ Note with ID {note_id} deleted.")
+
+def print_usage():
+    print("\nUsage:")
+    print("  python notes.py add \"Your note here\"")
+    print("  python notes.py list")
+    print("  python notes.py delete <note_id>\n")
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python notes.py [add/list/delete] [note]")
+        print("❗ Missing command.")
+        print_usage()
+        sys.exit(1)
+
+    command = sys.argv[1].lower()
+
+    if command == "add" and len(sys.argv) >= 3:
+        content = " ".join(sys.argv[2:])
+        add_note(content)
+    elif command == "list":
+        list_notes()
+    elif command == "delete" and len(sys.argv) == 3:
+        try:
+            note_id = int(sys.argv[2])
+            delete_note(note_id)
+        except ValueError:
+            print("❗ Invalid note ID. It should be a number.")
     else:
-        command = sys.argv[1]
-        if command == "add" and len(sys.argv) >= 3:
-            content = " ".join(sys.argv[2:])
-            add_note(content)
-        elif command == "list":
-            list_notes()
-        elif command == "delete" and len(sys.argv) == 3:
-            try:
-                delete_note(int(sys.argv[2]))
-            except ValueError:
-                print("Invalid note ID.")
-        else:
-            print("Invalid command.")
+        print("❗ Invalid command or arguments.")
+        print_usage()
