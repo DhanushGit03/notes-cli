@@ -17,12 +17,14 @@ def save_notes(notes):
     with open(NOTES_FILE, "w") as f:
         json.dump(notes, f, indent=2)
 
-def add_note(content):
+def add_note(note):
+    if not note.strip():
+        print("❌ Cannot add an empty note.")
+        return
     notes = load_notes()
-    new_id = len(notes) + 1
-    notes.append({"id": new_id, "content": content})
+    notes.append(note)
     save_notes(notes)
-    print(f"✅ Note added with ID {new_id}.")
+    print("✅ Note added.")
 
 def list_notes():
     notes = load_notes()
